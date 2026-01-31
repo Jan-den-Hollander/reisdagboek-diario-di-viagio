@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diario di Viaggio v47 - Stabiele Versie</title>
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { font-family: sans-serif; background-color: #eceff1; margin: 0; padding: 10px; color: #333; }
+        .container { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 800px; margin: auto; }
+        
+        .activatie-sectie { background: #fff3e0; padding: 15px; border: 2px solid #ff9800; border-radius: 10px; margin-bottom: 20px; text-align: center; }
+        .btn-activatie { background-color: #ff9800; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-bottom: 5px; }
+        .btn-story { background-color: #0288d1; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; }
+
+        .handleiding { text-align: left; font-size: 13px; line-height: 1.4; color: #856404; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #ffeeba; }
+
+        .sectie { background: #f8f9fa; padding: 15px; border: 1px solid #cfd8dc; border-radius: 8px; margin-bottom: 15px; }
+        h1 { color: #00796b; font-size: 20px; text-align: center; margin: 0 0 15px 0; border-bottom: 2px solid #00796b; padding-bottom: 10px; }
+        label { display: block; font-weight: bold; margin-top: 12px; font-size: 11px; color: #00796b; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 10px; border: 1px solid #b0bec5; border-radius: 6px; margin-top: 4px; font-size: 15px; }
+        
+        .row { display: flex; flex-wrap: wrap; gap: 10px; }
+        .col { flex: 1; min-width: 140px; }
+        
+        .btn-save { background-color: #00796b; color: white; width: 100%; padding: 15px; border: none; border-radius: 6px; font-weight: bold; margin-top: 10px; font-size: 16px; }
+        .btn-view { background-color: #0288d1; color: white; padding: 8px; border-radius: 4px; border:none; margin-right: 5px; }
+        .btn-del { background-color: #d32f2f; color: white; padding: 8px; border-radius: 4px; border:none; }
+        .btn-pdf { background-color: #4caf50; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
+        
+        #overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 2000; overflow-y: auto; padding: 20px; }
+        .story-item { border-bottom: 3px solid #00796b; padding-bottom: 30px; margin-bottom: 30px; }
+        .foto-container { margin-top: 15px; }
+        .foto-groot { width: 100%; border-radius: 8px; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .highlight-box { background: #fff9c4; padding: 10px; border-left: 4px solid #fbc02d; margin: 10px 0; font-style: italic; }
+        .no-photo-warn { background: #ffebee; color: #c62828; padding: 10px; font-size: 11px; margin-top: 10px; border-radius: 4px; border: 1px dashed #c62828; text-align: center; }
+
+        @media print {
+            .no-print, .btn-activatie, .btn-story, .btn-save, .btn-view, .btn-del, .btn-pdf, .activatie-sectie, #overlay > button, .handleiding { display: none !important; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; border: none; }
+            #overlay { position: relative; display: block; padding: 0; overflow: visible; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container no-print">
+    <h1>🌍 Reisdagboek - Diario di viaggio</h1>
+
+    <div class="activatie-sectie">
+        <div class="handleiding">
+            <b>Stap 1 / Passo 1:</b> Activeer altijd eerst de map met de oranje knop  überhaupt foto's te kunnen zien (ook voordat je op een oogje klikt) of om op te slaan.<br><i>Attiva sempre prima la cartella con il pulsante arancione per poter vedere le foto (anche prima di cliccare sull'occhio) o per salvare le foto.</i><br><br>
+            <b>Stap 2 / Passo 2:</b> Gebruik de blauwe knop om je hele reis als verhaal te lezen en als PDF op te slaan.<br><i>Usa il pulsante blu per leggere l'intero viaggio come un racconto e salvarlo in PDF.</i>
+        </div>
+
+        <button class="btn-activatie" onclick="document.getElementById('map-input').click()">📁 1. ACTIVEER FOTO-MAP / ATTIVA CARTELLA</button>
+        <input type="file" id="map-input" webkitdirectory directory multiple onchange="koppelFotos(this.files)" style="display:none;">
+        <div id="foto-status" style="font-size: 11px; color: #e65100; font-weight: bold;">⚠️ Foto's niet actief</div>
+        
+        <button class="btn-story" onclick="openStoryMode()">📖 2. BEKIJK GEHELE REIS / INTERO VIAGGIO</button>
+    </div>
+
+    <div class="sectie">
+        <div class="row">
+            <div class="col"><label>Titel reisbestemming - Titolo destinazione *</label><input type="text" id="best"></div>
+        </div>
+
+        <label>Reisgegevens (afstand en tijd) - Dati di viaggio (distanza e tempo)</label>
+        <input type="text" id="reisgegevens" placeholder="bijv. 350 km, 4 uur ore">
+
+        <label>Gebeurtenissen onderweg - Eventi lungo het percorso</label>
+        <input type="text" id="gebeurtenissen" placeholder="bijv. Koffiestop in Milaan, pausa café a Milano">
+
+        <div class="row">
+            <div class="col"><label>Welke reisdag - Quale giorno *</label><input type="text" id="reisdag" placeholder="bijv. Dag 1"></div>
+            <div class="col"><label>Datum - Data *</label><input type="date" id="datum"></div>
+        </div>
+
+        <div class="row">
+            <div class="col"><label>Weer - Meteo</label><input type="text" id="weer"></div>
+            <div class="col"><label>Vervoer - Trasporto</label><input type="text" id="vervoer"></div>
+        </div>
+
+        <div class="row">
+            <div class="col"><label>Heb dit gegeten- Ho mangiato</label><input type="text" id="heb"></div>
+            <div class="col"><label>Heb dit gedronken - Ho bevuto</label><input type="text" id="ho"></div>
+        </div>
+
+        <div class="row">
+            <div class="col"><label>Gezelschap - Compagnia</label><input type="text" id="gezelschap"></div>
+            <div class="col"><label>Accommodatie - Alloggio</label><input type="text" id="acc"></div>
+        </div>
+
+        <label>Waardering - Voto</label>
+        <select id="voto"><option>⭐⭐⭐⭐⭐</option><option>⭐⭐⭐⭐</option><option>⭐⭐⭐</option><option>⭐⭐</option><option>⭐</option></select>
+
+        <div style="background:#e0f2f1; padding:10px; border-radius:6px; margin-top:15px;">
+            <label>📸 Foto's selecteren / Seleziona Foto (Max 2)</label>
+            <input type="file" id="foto-kiezer" multiple onchange="selecteerFotos(this.files)">
+            <div id="gekozen-namen" style="font-size: 11px; font-style: italic; margin-top:5px; color:#555;">Nog geen foto's</div>
+            
+            <label>Toelichting foto's / Info foto</label>
+            <input type="text" id="foto-info" placeholder="Bijv. Uitzicht over de bergen...">
+        </div>
+
+        <label>Hoogtepunt - Momento clou ✨</label>
+        <input type="text" id="hp">
+        
+        <label>Verslag - Racconto</label>
+        <textarea id="tekst" rows="10" placeholder="Wat heb ik vandaag gedaan? Welke plekken heb ik bezocht? Wat heb ik gekocht? Wat wil ik nog meer kwijt? 
+
+Cosa ho fatto oggi? Quali posti ho visitato? Cosa ho comprato? Cos'altro vorrei aggiungere?"></textarea>
+
+        <button class="btn-save" onclick="opslaan()">Opslaan - Salva</button>
+    </div>
+
+    <table style="width:100%; border-collapse: collapse;"><tbody id="inhoud"></tbody></table>
+
+        <div style="margin-top:20px; text-align:center; padding:15px; border-top:1px solid #ccc; background: #f1f1f1; border-radius: 8px;">
+        <button onclick="exporteerData()" style="font-size:12px; padding:10px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">💾 BACKUP MAKEN / SALVA BACKUP</button>
+        <button onclick="document.getElementById('import-file').click()" style="font-size:12px; padding:10px; background:#607d8b; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold;">📥 HERSTEL / RIPRISTINA</button>
+        <input type="file" id="import-file" style="display:none" onchange="importeerData(this)">
+        
+        <p style="font-size: 11px; color: #555; margin-top: 15px; line-height: 1.4; font-style: italic;">
+            <b>Tip:</b> Wil je zelf de map kiezen? Ga naar Browser Instellingen > Downloads > 'Vragen waar elk bestand moet worden opgeslagen' aanzetten.<br>
+            <i><b>Suggerimento:</b> Vuoi scegliere la cartella? Vai su Impostazioni Browser > Download > Attiva 'Chiedi dove salvare ogni file'.</i>
+        </p>
+    </div>
+
+
+<div id="overlay">
+    <button class="btn-activatie no-print" style="background:#333;" onclick="document.getElementById('overlay').style.display='none'">SLUITEN / CHIUDI</button>
+    <button id="print-knop" class="btn-pdf no-print" onclick="window.print()">💾 OPSLAAN ALS PDF / SALVA PDF</button>
+    <div id="view-data"></div>
+</div>
+
+<script>
+    let beschikbareFotos = {}; 
+    let geselecteerdeBestandsNamen = [];
+    const DB_NAME = 'dagboek_v29_jukebox';
+
+    function koppelFotos(files) {
+        beschikbareFotos = {};
+        for (let f of files) {
+            if (f.type.includes('image')) { 
+                beschikbareFotos[f.name] = URL.createObjectURL(f); 
+            }
+        }
+        document.getElementById('foto-status').innerText = "✅ " + Object.keys(beschikbareFotos).length + " foto's actief!";
+        document.getElementById('foto-status').style.color = "#2e7d32";
+        toonLijst(); 
+    }
+
+    function formatteerDatum(datumString) {
+        if(!datumString) return "";
+        const d = new Date(datumString);
+        const opties = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        return d.toLocaleDateString('nl-NL', opties) + " | " + d.toLocaleDateString('it-IT', opties);
+    }
+
+    function selecteerFotos(files) {
+        geselecteerdeBestandsNamen = [];
+        let lijst = "";
+        for (let f of files) {
+            geselecteerdeBestandsNamen.push(f.name);
+            lijst += f.name + " ";
+        }
+        document.getElementById('gekozen-namen').innerText = "Gekozen: " + lijst;
+    }
+
+    function opslaan() {
+        const b = document.getElementById('best').value, d = document.getElementById('datum').value;
+        if (!b || !d) return alert("Incomplete!");
+
+        const data = JSON.parse(localStorage.getItem(DB_NAME) || '[]');
+        data.push({
+            id: Date.now(), 
+            best: b, 
+            datum: d, 
+            reisdag: document.getElementById('reisdag').value,
+            reisgegevens: document.getElementById('reisgegevens').value,
+            gebeurtenissen: document.getElementById('gebeurtenissen').value,
+            weer: document.getElementById('weer').value,
+            verv: document.getElementById('vervoer').value, 
+            gez: document.getElementById('gezelschap').value,
+            acc: document.getElementById('acc').value, 
+            gegeten: document.getElementById('heb').value,
+            gedronken: document.getElementById('ho').value,
+            voto: document.getElementById('voto').value,
+            hp: document.getElementById('hp').value, 
+            tekst: document.getElementById('tekst').value,
+            fotoNamen: geselecteerdeBestandsNamen,
+            fotoInfo: document.getElementById('foto-info').value
+        });
+
+        localStorage.setItem(DB_NAME, JSON.stringify(data));
+        location.reload();
+    }
+
+    function toonLijst() {
+        const data = JSON.parse(localStorage.getItem(DB_NAME) || '[]').sort((a,b)=>a.datum<b.datum?1:-1);
+        const container = document.getElementById('inhoud');
+        container.innerHTML = '';
+        data.forEach(r => {
+            container.innerHTML += `<tr style="border-bottom:1px solid #ddd;">
+                <td style="padding:10px;"><b>${r.best}</b><br><small>${r.datum}</small></td>
+                <td style="text-align:right; min-width:100px;">
+                    <button class="btn-view" onclick="bekijkDag(${r.id})">👁</button>
+                    <button class="btn-del" onclick="wis(${r.id})">X</button>
+                </td></tr>`;
+        });
+    }
+
+    function wis(id) { if(confirm("Wissen?")) { 
+        let d = JSON.parse(localStorage.getItem(DB_NAME)).filter(x=>x.id!=id);
+        localStorage.setItem(DB_NAME, JSON.stringify(d)); location.reload(); 
+    }}
+
+    function bekijkDag(id) {
+        const r = JSON.parse(localStorage.getItem(DB_NAME)).find(x=>x.id==id);
+        document.getElementById('view-data').innerHTML = bouwVerslagHTML(r);
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function openStoryMode() {
+        const bestemming = prompt("Welke reis? (Bijv. Luxemburg)");
+        if (!bestemming) return;
+        const data = JSON.parse(localStorage.getItem(DB_NAME) || '[]')
+                         .filter(x => x.best.toLowerCase().includes(bestemming.toLowerCase()))
+                         .sort((a,b) => a.datum > b.datum ? 1 : -1);
+        
+        if (data.length === 0) return alert("Niet gevonden.");
+
+        let html = `<h1 style="text-align:center; color:#00796b;">📖 Reisverslag: ${bestemming}</h1>`;
+        data.forEach(r => { html += `<div class="story-item">${bouwVerslagHTML(r)}</div>`; });
+        document.getElementById('view-data').innerHTML = html;
+        document.getElementById('overlay').style.display = 'block';
+    }
+
+    function bouwVerslagHTML(r) {
+        let fHtml = "";
+        if(r.fotoNamen && r.fotoNamen.length > 0) {
+            r.fotoNamen.forEach(n => {
+                const url = beschikbareFotos[n];
+                fHtml += url ? `<img src="${url}" class="foto-groot">` : `<div class="no-photo-warn">⚠️ FOUT: Kan <b>${n}</b> niet vinden.</div>`;
+            });
+            if(r.fotoInfo) fHtml += `<p style="font-size:12px; text-align:center; font-style:italic;">${r.fotoInfo}</p>`;
+        }
+
+        return `
+            <h2 style="color:#00796b; margin-bottom:5px;">${r.reisdag || r.best}</h2>
+            <p style="margin-top:0; font-weight:bold;">${formatteerDatum(r.datum)}</p>
+            <p style="font-size:14px; background:#f0f4f4; padding:8px; border-radius:4px;">
+                <b>📍 Alloggio:</b> ${r.acc || '-'} | <b>🚗 Trasporto:</b> ${r.verv || '-'}<br>
+                <b>👥 Compagnia:</b> ${r.gez || '-'} | <b>☀️ Meteo:</b> ${r.weer || '-'}<br>
+                ${r.reisgegevens ? `<b>🛣 Dati:</b> ${r.reisgegevens}<br>` : ''}
+                ${r.gebeurtenissen ? `<b>🚧 Eventi:</b> ${r.gebeurtenissen}<br>` : ''}
+                ${r.gegeten ? `<b>🍴 Mangiato:</b> ${r.gegeten}<br>` : ''}
+                ${r.gedronken ? `<b>🍷 Bevuto:</b> ${r.gedronken}<br>` : ''}
+                <b>Voto:</b> ${r.voto}
+            </p>
+            ${r.hp ? `<div class="highlight-box"><b>Momento clou ✨:</b> ${r.hp}</div>` : ''}
+            <p style="white-space:pre-wrap; line-height:1.6; margin-top:10px;">${r.tekst}</p>
+            <div class="foto-container">${fHtml}</div>`;
+    }
+
+    // Backup functies (apart gehouden van de hoofd-logica)
+    function exporteerData() {
+        const data = localStorage.getItem(DB_NAME);
+        if (!data) return alert("Geen data.");
+        const blob = new Blob([data], {type: "application/json"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "reisdagboek_backup.json";
+        link.click();
+    }
+
+    function importeerData(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            localStorage.setItem(DB_NAME, e.target.result);
+            location.reload();
+        };
+        reader.readAsText(file);
+    }
+
+    window.onload = toonLijst;
+</script>
+</body>
+</html>
